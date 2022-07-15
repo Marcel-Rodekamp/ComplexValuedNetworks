@@ -86,3 +86,16 @@ class Hubbard2SiteModel:
                 - self.logdetM(phi,species = self.particle_species) \
                 - self.logdetM(phi,species = self.hole_species) 
 
+    def calculate_batch_action(self, batch_phi):
+        r"""
+            ...
+        """
+
+        batchSize, _, _ = batch_phi.shape 
+        
+        S = torch.zeros(batchSize,**torchTensorArgs)
+        
+        for batchID in range(batchSize):
+            S[batchID] = self.action(batch_phi[batchID,:,:])
+    
+        return S
