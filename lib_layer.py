@@ -49,7 +49,6 @@ class AffineCoupling(torch.nn.Module):
         
         return mout.exp() * xA + aout, mout.detach().sum(-1).sum(-1)
 
-
 class PRCL(torch.nn.Module):
     r"""
         This implements the paired affine coupling.
@@ -140,7 +139,6 @@ class PRCL(torch.nn.Module):
 
         return out, logDetJc1 + logDetJc2
 
-
 class Sequential(torch.nn.Module):
     r"""
         This is just a wrapper of the Sequential container, that propagates
@@ -178,6 +176,39 @@ class Sequential(torch.nn.Module):
 
     def __getitem__(self, item):
         return self.module_list[item]
+
+class LinearTransformation(torch.nn.Module):
+    def __init__(self, Nt, Nx):
+        r"""
+            \param:
+                - Nt: int, number of time slices compate Hubbard2SiteModel.Nt
+                - Nx: int, number of ions compate Hubbard2SiteModel.Nx
+
+            Initilizes a Linear transformation according to the 2 dimensional
+            configuration phi ~ (Nt,Nx) used in the 2 Site Hubbard model.
+
+            The transformation is defined by
+            \f[
+                \phi'_{t',x'} = \sum_{\t,x} \omega_{t',x',t,x} \phi_{t,x} + b_{t',x'}
+            \f]
+        """
+        super(LinearTransformation, self).__init__()
+
+        self.register_parameter(
+            name  = 'bias', 
+            param = torch.nn.Parameter(
+                        torch.rand((Nt,Nx),dtype=torch.cdouble)
+            )
+        )
+        self.register_parameter(
+            name  = 'weight', 
+            param = torch.nn.Parameter(
+                torch.rand((Nt,Nx,Nt,Nx),dtype=torch.cdouble)
+            )
+        )
+
+    def forward(self, x):
+        return torch.tensordot(x,self.weight,dims=([-1,-2],[0,1])) + self.bias
 
 
 # =======================================================================
