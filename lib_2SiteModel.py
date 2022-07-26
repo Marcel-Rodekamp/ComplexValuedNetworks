@@ -2,6 +2,11 @@ import torch
 import numpy as np
 from lib_tensorSpecs import torchTensorArgs
 
+try:
+    import isle 
+    import isle.action
+except:
+    print("No isle support found.")
 
 class Hubbard2SiteModel:
     def __init__(self,Nt,beta,U,mu, tangentPlaneOffset = 0):
@@ -99,3 +104,96 @@ class Hubbard2SiteModel:
             S[batchID] = self.action(batch_phi[batchID,:,:])
     
         return S
+
+class ActionImpl(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, phi, action):
+        ctx.save_for_backward(phi)
+        ctx.action = action
+        
+        # we will return S as the torch.tensor of action(s)
+        S = None 
+
+        # compute a batch of configs
+        if len(phi.shape) > 2:
+            Nconf,Nt,Nx = phi.shape 
+            S = torch.zeros(Nconf,dtype=phi.dtype,device=phi.device,requires_grad=True)
+            for n in range(Nconf):
+                S[n] = ctx.action.eval(phi[n,:,:].detach().reshape(Nt*Nx).numpy())
+
+        # compute a single config
+        else:
+            Nt,Nx = phi.shape 
+            S = torch.tensor(
+                ctx.action.eval(isle.CDVector(phi.detach().reshape(Nt*Nx).numpy())), 
+                dtype=phi.dtype, 
+                device=phi.device, 
+                requires_grad=True
+            )
+
+        return S
+
+    @staticmethod
+    def backward(ctx,grad_output):
+        phi, = ctx.saved_tensors
+
+        out = torch.zeros_like(phi)
+
+        # compute backward for a batch ov configs
+        if len(phi.shape) > 2:
+            Nconf,Nt,Nx = phi.shape 
+
+            for n in range(Nconf):
+                force = ctx.action.force(isle.CDVector(phi[n,:,:].detach().reshape(Nt*Nx).numpy()))
+                
+                out[n,:,:] = grad_output[n]*torch.from_numpy(
+                    np.array(force)
+                ).reshape(Nt,Nx)   
+
+        # compute backward for a singe config
+        else:
+            Nt,Nx = phi.shape
+            
+            force = ctx.action.force(isle.CDVector(phi.detach().reshape(Nt*Nx).numpy()))
+            
+            out[:,:] = grad_output*torch.from_numpy(
+                np.array(force)
+            ).reshape(Nt,Nx)
+
+        return out,None
+
+
+class Action(torch.nn.Module):
+    def __init__(self,Nt,beta,U,mu,lattice="two_sites"):
+        super().__init__()
+        self.lattice = isle.LATTICES[lattice]
+        self.lattice.nt(Nt)
+
+        self.params = isle.util.parameters(
+            beta      = beta,                                   # inverse temperatur
+            U         = U,                                      # On site interaction 
+            mu        = mu,                                     # chemical potential
+            sigmaKappa= -1,                                     # prefactor of kappa for holes/spin down
+            hopping   = isle.action.HFAHopping.EXP,             # Hopping matrix 
+            basis     = isle.action.HFABasis.PARTICLE_HOLE,     # Basis of the creation operators
+            algorithm = isle.action.HFAAlgorithm.DIRECT_SINGLE, # Algorithm to compute log det M
+        )
+
+        self.action = isle.action.HubbardGaugeAction(self.params.tilde("U",self.lattice)) \
+                    + isle.action.makeHubbardFermiAction(
+                        self.lattice,
+                        self.params.beta,
+                        self.params.tilde("mu",self.lattice),
+                        self.params.sigmaKappa,
+                        self.params.hopping,
+                        self.params.basis,
+                        self.params.algorithm
+                    )
+
+        self.actionImpl = ActionImpl.apply
+
+    def forward(self,phi):
+        return self.actionImpl(phi,self.action)
+
+
