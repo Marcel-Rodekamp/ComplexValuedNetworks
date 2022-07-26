@@ -196,4 +196,31 @@ class Action(torch.nn.Module):
     def forward(self,phi):
         return self.actionImpl(phi,self.action)
 
+class Hubbard2SiteModelIsleIsleAction:
+    def __init__(self,Nt,beta,U,mu, tangentPlaneOffset = 0):
+        self.Nt = Nt 
+        self.Nx = 2
+        self.beta = beta
+        self.tangentPlaneOffset = tangentPlaneOffset
+        self.delta = beta/self.Nt
 
+        self.U = U*self.delta  
+        self.mu = mu*self.delta
+
+        self.actionModule = Action(Nt,beta,U,mu)
+
+    def __repr__(self):
+        return f"Hubbard2SiteModel(Nt={self.Nt},\u03B2={self.beta},U={self.U},\u03BC={self.mu},TP={self.tangentPlaneOffset:.2})"
+
+    def action(self,phi):
+        r"""
+            ...
+        """
+        return self.actionModule(phi)
+
+    def calculate_batch_action(self, batch_phi):
+        r"""
+            Implemented in actionModule already :)
+        """
+
+        return self.actionModule(batch_phi)
