@@ -145,21 +145,21 @@ class ActionImpl(torch.autograd.Function):
             Nconf,Nt,Nx = phi.shape 
 
             for n in range(Nconf):
-                force = ctx.action.force(isle.CDVector(phi[n,:,:].detach().reshape(Nt*Nx).numpy()))
+                force = -ctx.action.force(isle.CDVector(phi[n,:,:].detach().reshape(Nt*Nx).numpy()))
                 
                 out[n,:,:] = grad_output[n]*torch.from_numpy(
                     np.array(force)
-                ).reshape(Nt,Nx)   
+                ).reshape(Nt,Nx).conj()  
 
         # compute backward for a singe config
         else:
             Nt,Nx = phi.shape
             
-            force = ctx.action.force(isle.CDVector(phi.detach().reshape(Nt*Nx).numpy()))
+            force = -ctx.action.force(isle.CDVector(phi.detach().reshape(Nt*Nx).numpy()))
             
             out[:,:] = grad_output*torch.from_numpy(
                 np.array(force)
-            ).reshape(Nt,Nx)
+            ).reshape(Nt,Nx).conj()
 
         return out,None
 
@@ -224,3 +224,4 @@ class Hubbard2SiteModelIsleIsleAction:
         """
 
         return self.actionModule(batch_phi)
+
