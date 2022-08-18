@@ -4,7 +4,7 @@ class StatisticalPowerLoss(torch.nn.Module):
     
     # the loss function that maximises the statistical power
 
-    def __init__(self, Hubbard2SiteModel, partitionFunctionEstimate = 1):
+    def __init__(self, Hubbard2SiteModelIsleIsleAction, partitionFunctionEstimate = 1):
         
         r"""
             \param: Hubbard2SiteModel, class
@@ -12,7 +12,7 @@ class StatisticalPowerLoss(torch.nn.Module):
         """
         super(StatisticalPowerLoss,self).__init__()
 
-        self.HM = Hubbard2SiteModel
+        self.HM = Hubbard2SiteModelIsleIsleAction
 
         # register the estimate of the partition function 
         self.register_buffer(
@@ -39,10 +39,10 @@ class MinimizeImaginaryPartLoss(torch.nn.Module):
     
     # the loss function that minimises the imaginary part of the difference between the action and the log det of the NN
     
-    def __init__(self, Hubbard2SiteModel):
+    def __init__(self, Hubbard2SiteModelIsleIsleAction):
         super(MinimizeImaginaryPartLoss,self).__init__()
 
-        self.HM = Hubbard2SiteModel
+        self.HM = Hubbard2SiteModelIsleIsleAction
 
     def forward(self,phi,logDetJ_NN):
         Seff = self.HM.calculate_batch_action(phi) - logDetJ_NN

@@ -197,110 +197,27 @@ class LinearTransformation(torch.nn.Module):
         self.register_parameter(
             name  = 'bias', 
             param = torch.nn.Parameter(
-                        torch.rand((Nt,Nx),dtype=torch.cdouble)
+                        torch.rand((Nt,Nx//2),dtype=torch.cdouble)
             )
         )
         self.register_parameter(
             name  = 'weight', 
             param = torch.nn.Parameter(
-                torch.rand((Nt,Nx,Nt,Nx),dtype=torch.cdouble)
+                torch.rand((Nt,Nx//2,Nt,Nx//2),dtype=torch.cdouble)
             )
         )
 
     def forward(self, x):
+        print("x shape is ", x.shape)
+        
+        print("self.weight shape is ", self.weight.shape)
+        
         return torch.tensordot(x,self.weight,dims=([-1,-2],[0,1])) + self.bias
 
-
-class Equivariance(torch.nn.Module):
-    def __init__(self,NN):
-        
-        # initialise the class
-        super(Equivariance,self).__init__()
-        
-        # add the NN as a module
-        self.add_module("NN",NN)
-
-    def forward(self,phi):
-        r"""
-            \param: phi: batch of configurations
-            The forward pass will implement the TL layer, using the NN
-        """
-        
-        # get the dimensions of phi
-        if phi.dim() == 3:
-            Nconf,_,_ = phi.shape
-
-            # get the time slice t0 where each config has a minimum value along x=0
-            t = phi.abs().argmin(dim=1)
-            
-            T0 = t[:,0]
-       
-            # loop through all the configurations in the batch and roll them
-            # (the 'for' loop is needed because 'shifts' can only take int as argument)
-            for i in range(Nconf):
-                config = phi[i,...]
-                if t[i][0].item() > t[i][1].item():
-                    T0[i] = t[i][1]
-                    config.flip(1)
-                                
-                # translate the whole configuration in time by t0
-                config = torch.roll(config, shifts = T0[i].item(), dims=1)
-                
-                # assemble back into a batch of configs
-                phi[i,...] = config
-                
-            # apply the NN
-            NNphi, logDet = self.NN(phi)
-            
-            # invert the time translation, rolling back with -t0
-            for i in range(Nconf):
-                NNphi[i,...] = torch.roll(NNphi[i], shifts = -T0[i].item(), dims=1)
-                if t[i][0].item() > t[i][1].item():
-                    NNphi[i,...].flip(1)
-            
-            # this whole class is supposed to be a new NN, so again we return the resulting configurations and the logDet
-            # the logDet is unchanged by the time translation, so it is just the logDet returned by the initial NN
-            return NNphi, logDet
-        elif(phi.dim() == 2):
-
-            # get the time slice t0 where each config has a minimum value along x=0
-            t = phi.abs().argmin(dim=0)
-            
-            T0 = t[0]
-       
-            # loop through all the configurations in the batch and roll them
-            # (the 'for' loop is needed because 'shifts' can only take int as argument)
-            config = phi
-            if t[0].item() > t[1].item():
-                T0 = t[1]
-                config.flip(0)
-                                
-            # translate the whole configuration in time by t0
-            config = torch.roll(config, shifts = T0.item(), dims=0)
-                
-            # assemble back into a batch of configs
-            phi = config
-                
-            # apply the NN
-            NNphi, logDet = self.NN(phi)
-            
-            # invert the time translation, rolling back with -t0
-            NNphi = torch.roll(NNphi, shifts = -T0.item(), dims=0)
-            if t[0].item() > t[1].item():
-                NNphi.flip(0)
-            
-            # this whole class is supposed to be a new NN, so again we return the resulting configurations and the logDet
-            # the logDet is unchanged by the time translation, so it is just the logDet returned by the initial NN
-            return NNphi, logDet
-
-        else:
-            raise RuntimeError(f"Equivariance not implemented for {phi.dim()=}")
 
 # =======================================================================
 # For convenience I define a bunch of factory functions:
 # =======================================================================
-
-
 
 def createPRCL(V, Nlayer, couplingFactory, **kwargs):
     r"""

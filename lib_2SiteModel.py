@@ -139,28 +139,40 @@ class ActionImpl(torch.autograd.Function):
         phi, = ctx.saved_tensors
 
         out = torch.zeros_like(phi)
-
-        # compute backward for a batch ov configs
+        
+        # ok := boolean that check whether the matrix has become singular (True) or not (False)
+        # default: False
+        ok = False
+        # compute backward for a batch of configs
         if len(phi.shape) > 2:
             Nconf,Nt,Nx = phi.shape 
 
             for n in range(Nconf):
+                #try:
                 force = -ctx.action.force(isle.CDVector(phi[n,:,:].detach().reshape(Nt*Nx).numpy()))
-                
+
                 out[n,:,:] = grad_output[n]*torch.from_numpy(
                     np.array(force)
-                ).reshape(Nt,Nx).conj()  
+                ).reshape(Nt,Nx).conj()
+                #except:
+                    #print("Singular matrix at this set of hyperparameters:")
+                    #ok = True
+                   # break
 
         # compute backward for a singe config
         else:
+            #try: 
             Nt,Nx = phi.shape
-            
+
             force = -ctx.action.force(isle.CDVector(phi.detach().reshape(Nt*Nx).numpy()))
-            
+
             out[:,:] = grad_output*torch.from_numpy(
                 np.array(force)
             ).reshape(Nt,Nx).conj()
-
+            #except:
+              #  print("Singular matrix at this set of hyperparameters:")
+               # ok = True
+               # break
         return out,None
 
 
@@ -224,4 +236,3 @@ class Hubbard2SiteModelIsleIsleAction:
         """
 
         return self.actionModule(batch_phi)
-

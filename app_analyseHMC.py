@@ -189,7 +189,6 @@ if __name__ == "__main__":
     name5 = "Configs_Nt_16initEps_0.001trainEps_1e-05trainBatchSize_10000trainMiniBatchSize_1000LR_1e-07 numPRCLLayers_1numIntLayers_8activ_Softsign()lossfn_<class 'lib_loss.MinimizeImaginaryPartLoss'>epochs_1400.h5"
     
     #names = [name0, name1, name2, name3, name4, name5]
-    names = [name0]
     
     hyps0 = {
           "numPRCLLayers": 1,
@@ -270,7 +269,27 @@ if __name__ == "__main__":
         }
     
     #hyps = [hyps0, hyps1, hyps2, hyps3, hyps4, hyps5]
-    hyps = [hyps0]
+    
+    
+    name_complex = "Configs_,Nt_16initEpsilon_0.001,trainEpsilon_1e-05,trainBatchSize_10000,trainMiniBatchSize_5000,learningRate_1e-06, numPRCLLayers_1,numInternalLayers_2, activation_complexRelu(), lossfn_<class 'lib_loss.MinimizeImaginaryPartLoss'>.h5"
+    
+    hyps_complex = {
+          "numPRCLLayers": 1,
+          "numInternalLayers": 2,
+          "activation": complexRelu,
+          "initEpsilon": 0.001,
+          "trainEpsilon":  1e-05,
+          "trainBatchSize": 10000,
+          "trainMiniBatchSize": 5000,
+          "lossFct": MinimizeImaginaryPartLoss,
+          "learningRate": 1e-06,
+          "Nt": 16
+        }
+    
+    
+    hyps = [hyps_complex]
+    names = [name_complex]
+    
     Nconf = 10000
     burnIn = 1000
     Nt = 16
