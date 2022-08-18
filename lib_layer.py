@@ -215,6 +215,60 @@ class LinearTransformation(torch.nn.Module):
         return torch.tensordot(x,self.weight,dims=([-1,-2],[0,1])) + self.bias
 
 
+    
+class Equivariance(torch.nn.Module):
+    def __init__(self,NN):
+        
+        # initialise the class
+        super(Equivariance,self).__init__()
+        
+        # add the NN as a module
+        self.add_module("NN",NN)
+
+    def forward(self,phi):
+        r"""
+            \param: phi: batch of configurations
+            The forward pass will implement the TL layer, using the NN
+        """
+        
+        # get the dimensions of phi
+        
+        Nconf,_,_ = phi.shape
+        
+        # get the time slice t0 where each config has a minimum value along x=0
+        t = phi.abs().argmin(dim=1)
+        
+        T0 = t[:,0]
+       
+        # loop through all the configurations in the batch and roll them
+        # (the 'for' loop is needed because 'shifts' can only take int as argument)
+        for i in range(Nconf):
+            
+            # space translation
+            if t[i][0].item() > t[i][1].item():
+                T0[i] = t[i][1]
+                phi[i,...].flip(1)
+                            
+            
+            # translate the whole configuration in time by t0
+            phi[i,...].roll(shifts = T0[i].item(), dims=0)
+            
+           
+            
+        # apply the NN
+        NNphi, logDet = self.NN(phi)
+        
+        # invert the time translation, rolling back with -t0
+        for i in range(Nconf):
+            NNphi[i,...].roll(shifts = -T0[i].item(), dims=0)
+            if t[i][0].item() > t[i][1].item():
+                NNphi[i,...].flip(1)
+        
+        # this whole class is supposed to be a new NN, so again we return the resulting configurations and the logDet
+        # the logDet is unchanged by the time translation, so it is just the logDet returned by the initial NN
+        return NNphi, logDet
+    
+    
 # =======================================================================
 # For convenience I define a bunch of factory functions:
 # =======================================================================
