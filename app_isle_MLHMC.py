@@ -19,21 +19,28 @@ import isle.meas
 
 from pathlib import Path
 
-import lib_layer as Layers
-import lib_loss as Losses
+import lib_layer_Eq as Layers
+#import lib_loss as Losses
+
+from lib_activations import complexRelu, zLogz, fractions
+
+from lib_loss import StatisticalPowerLoss,MinimizeImaginaryPartLoss
+
 
 ### Specify input / output files
+
+
 
 # Name of the lattice.
 LATTICE = "two_sites"
 
-NCONF = 1000
+NCONF = 10000
 Nt = 16
 Nx = 2
 
 tangentPlaneOffset = -4.99933002e-01
 
-TRAJECTORY_LENGTH = 0.1
+TRAJECTORY_LENGTH = 0.5
 
 NUMBER_MD_STEPS = 10
 
@@ -41,9 +48,32 @@ BURNIN = 1000
 
 THERMALIZATION = 10
 
-NETWORKFILE = "NN equivNt_16initEps_0.001trainEps_1e-05trainBatchSize_10000trainMiniBatchSize_5000LR_1e-07 numPRCLLayers_1numIntLayers_8activ_Softsign()lossfn__class 'lib_loss.MinimizeImaginaryPartLoss'_epochs_1800.pt"
+NETWORKFILE0 = "NN,Nt_16initEpsilon_0.001,trainEpsilon_0.0005,trainBatchSize_10000,trainMiniBatchSize_5000,learningRate_1e-06, numPRCLLayers_1,numInternalLayers_2,activation_complexRelu(),lossfn_MinimizeImaginaryPartLoss,epochs_200,equivariance.pt"
 
-NETWORKSPECS = {
+
+NETWORKFILE1 = "NN equivNt_16initEps_0.001trainEps_1e-05trainBatchSize_10000trainMiniBatchSize_5000LR_1e-06 numPRCLLayers_1numIntLayers_8activ_Softsign()lossfn_<class 'lib_loss.MinimizeImaginaryPartLoss'>epochs_600.pt"
+
+NETWORKFILE2 = "NN equivNt_16initEps_0.001trainEps_1e-05trainBatchSize_10000trainMiniBatchSize_5000LR_0.0001 numPRCLLayers_1numIntLayers_8activ_Softsign()lossfn_<class 'lib_loss.MinimizeImaginaryPartLoss'>epochs_1000.pt"
+
+NETWORKFILE3 = "NN,Nt_16initEpsilon_0.0001,trainEpsilon_0.09,trainBatchSize_10000,trainMiniBatchSize_100,learningRate_1e-05, numPRCLLayers_1,numInternalLayers_2,activation_fractions(),lossfn_MinimizeImaginaryPartLoss,epochs_400,equivariance.pt"
+
+NETWORKSPECS0 = {
+    
+          "numPRCLLayers": 1,
+          "numInternalLayers": 2,
+          "activation": complexRelu,
+          "initEpsilon": 0.001,
+          "trainEpsilon":  1e-05,
+          "trainBatchSize": 10000,
+          "trainMiniBatchSize": 5000,
+          "lossFct": MinimizeImaginaryPartLoss,
+          "learningRate": 1e-06,
+          "Nt": 16
+        }
+
+
+NETWORKSPECS1 = {
+    
           "numPRCLLayers": 1,
           "numInternalLayers": 8,
           "activation": torch.nn.Softsign,
@@ -51,10 +81,42 @@ NETWORKSPECS = {
           "trainEpsilon":  1e-05,
           "trainBatchSize": 10000,
           "trainMiniBatchSize": 5000,
-          "lossFct": Losses.MinimizeImaginaryPartLoss,
-          "learningRate": 1e-07,
-          "Nt": 16,
+          "lossFct": MinimizeImaginaryPartLoss,
+          "learningRate": 1e-06,
+          "Nt": 16
         }
+
+NETWORKSPECS2 = {
+    
+          "numPRCLLayers": 1,
+          "numInternalLayers": 8,
+          "activation": torch.nn.Softsign,
+          "initEpsilon": 0.001,
+          "trainEpsilon":  1e-05,
+          "trainBatchSize": 10000,
+          "trainMiniBatchSize": 5000,
+          "lossFct": MinimizeImaginaryPartLoss,
+          "learningRate": 0.0001,
+          "Nt": 16
+        }
+
+
+NETWORKSPECS3 = {
+    
+          "numPRCLLayers": 1,
+          "numInternalLayers": 2,
+          "activation": fractions,
+          "initEpsilon": 0.0001,
+          "trainEpsilon":  0.09,
+          "trainBatchSize": 10000,
+          "trainMiniBatchSize": 100,
+          "lossFct": MinimizeImaginaryPartLoss,
+          "learningRate": 1e-05,
+          "Nt": 16
+        }
+
+NETWORKSPECS = NETWORKSPECS3
+NETWORKFILE  = NETWORKFILE3
 
 PARAMS = isle.util.parameters(
     beta=4,         # inverse temperature
@@ -271,7 +333,7 @@ def MLHMC(args):
     evolver = isle.evolver.ConstStepLeapfrogML(action=hmcState.action, length=TRAJECTORY_LENGTH, nstep=NUMBER_MD_STEPS, rng=rng, transform=NN)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    hmcState(evStage, evolver, NCONF, saveFreq=THERMALIZATION, checkpointFreq=10)
+    hmcState(evStage, evolver, NCONF, saveFreq=1, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 
@@ -340,42 +402,4 @@ if __name__ == "__main__":
     MLHMC(args)
 
     measurements(args)
-
-
-
-
-
-# ========================================================================
-
-
-#Nx = 2
-#
-#fn = "1_configs.h5"
-#
-#with h5.File(fn,'r') as h5f:
-#    S_eff  = h5f['S_eff'][()]
-#    S      = h5f['S'][()]
-#    phis_M = h5f['configsM'][()]
-#    phis_R = h5f['configsR'][()]
-#
-#Csp = correlator(phis_M)
-#Nconf,_,_,_ = Csp.shape
-#Nbst = 10
-#
-#Csp_bst = torch.zeros((Nbst,Nt,Nx,Nx),dtype = torch.cdouble)
-#for k in range(Nbst):
-#    idx = torch.randint(low=0,high=Nconf,size=(Nconf,))
-#    sample_C = Csp[idx]
-#    sample_S = torch.exp(1j*S_eff[idx].imag)
-#
-#    Csp_bst[k] = (sample_C*sample_S[:,None,None,None]).mean(dim=0)/sample_S.mean(dim=0)
-#
-#Csp_est = Csp_bst.mean(dim = 0).numpy()
-#Csp_err = Csp_bst.std(dim = 0).numpy()
-#t = np.arange(Nt)*delta 
-#
-#plt.errorbar(t,Csp_est[:,0,0],Csp_err[:,0,0],capsize = 2)
-#plt.yscale('log')
-#plt.show()
-
 
