@@ -250,15 +250,15 @@ class Hubbard2SiteModel:
                                     = - [ 1/U phi - Tr( M^{p,-1} dM^p/dphi + M^{h,-1} dM^h/dphi ) ]
         """
         if phi.dim() == 2:
-            return -(phi/self.U - self.TrMinvM(phi,+1) - self.TrMinvM(phi,-1))
+            return (phi/self.U - self.TrMinvM(phi,+1) - self.TrMinvM(phi,-1))
         elif phi.dim() == 3:
             Nconf,_,_ = phi.shape 
             f = torch.zeros_like(phi)
             
             for n in range(Nconf):
-                f[n] = self.TrMinvM(phi[n],+1) + self.TrMinvM(phi[n],-1)
+                f[n] = -self.TrMinvM(phi[n],+1) - self.TrMinvM(phi[n],-1)
 
-            f -= phi/self.U 
+            f += phi/self.U 
 
             return f 
         else:
