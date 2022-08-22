@@ -120,7 +120,7 @@ class ActionImpl(torch.autograd.Function):
             Nconf,Nt,Nx = phi.shape 
             S = torch.zeros(Nconf,dtype=phi.dtype,device=phi.device,requires_grad=True)
             for n in range(Nconf):
-                S[n] = ctx.action.eval(phi[n,:,:].detach().reshape(Nt*Nx).numpy())
+                S[n] = ctx.action.eval(isle.CDVector(phi[n,:,:].detach().reshape(Nt*Nx).numpy()))
 
         # compute a single config
         else:
