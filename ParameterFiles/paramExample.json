@@ -1,0 +1,29 @@
+{
+    "Nt": 32,
+    "beta": 4,
+    "U": 4,
+    "mu": 3,
+    "lattice": "two_sites",
+    "Nx": 2,
+    "Tangent Plane Offset": -0.249966501,
+    "Number Internal Layers": 2,
+    "Number Flow Steps": 2,
+    "Flow Step Size": 0.01,
+    "Ntrain": {
+        "RK4": 100, 
+        "FI" : 100
+    },
+    "Nvalid": {
+        "RK4": 100,
+        "FI" : 100
+    },
+    "Ntest": 100,
+    "Learning Rate": {
+        "RK4": 1e-4,
+        "FI" : 1e-4
+    },
+    "Number Epochs": {
+        "RK4": 200, 
+        "FI" : 50
+    }
+}
