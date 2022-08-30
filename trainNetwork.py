@@ -677,7 +677,7 @@ def main():
             node = f"{params['lattice']}/beta{params['beta']}/U{params['U']}/mu{params['mu']}"
             if node in h5f:
                 tau = h5f["tau"][()]
-                exactCorr = group[()]
+                exactCorr = h5f[node][()]
                 plot_exact = True 
             else:
                 plot_exact = False
