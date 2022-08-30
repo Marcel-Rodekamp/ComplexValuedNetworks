@@ -1,0 +1,20 @@
+{
+  "nt": 32,
+  "lattice": "two_sites",
+
+  "beta": 4.0,
+  "U": 4.0,
+  "mu": 3.0,
+
+  "tangent_plane": -0.249966501,
+  "tau_f": 1e-1,
+
+  "lr": 5e-4,
+  "epochs": 100,
+  "mini_batches": 1,
+  "number_layers": 3,
+
+  "rng_seed": 1075,
+
+  "exact_corr_path": "ExactData/exact.two_sites.exp.nt128.beta4_0.U4_0.mu3_0.txt"
+}

@@ -1,3 +1,12 @@
 .ipynb_checkpoints/
 __pycache__/
 
+Results/*.pdf
+Results/*.png
+Results/*.pt
+Results/*.h5
+
+ExactData/*.pdf
+ExactData/*.png
+ExactData/*.pt
+ExactData/*.h5
