@@ -10,3 +10,8 @@ ExactData/*.pdf
 ExactData/*.png
 ExactData/*.pt
 ExactData/*.h5
+
+TrainingData/*.pdf
+TrainingData/*.png
+TrainingData/*.pt
+TrainingData/*.h5
